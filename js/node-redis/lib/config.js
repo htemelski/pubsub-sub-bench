@@ -33,7 +33,7 @@ function parseArgs() {
     .option('slot-refresh-interval', { default: -1 })
     .option('print-messages', { default: false })
     .option('verbose', { default: false })
-    .option('measure-rtt-latency', { default: false })
+    .option('measure-rtt-latency', { default: true })
     .option('redis-timeout', { default: 120000 })
     .option('pool-size', { default: 0 })
     .help().argv;

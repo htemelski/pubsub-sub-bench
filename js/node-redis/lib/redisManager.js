@@ -50,13 +50,19 @@ async function runBenchmark(argv) {
     // Use createCluster for Redis Cluster mode
     client = createCluster({
       rootNodes: [{ 
-        url: `redis://${argv.host}:${argv.port}`
+        url: `redis://${argv.host}:${argv.port}`,
+        readonly: false, 
+        disableClientInfo: true
       }],
       useReplicas: false,
+      disableClientInfo: true,
       defaults: {
+        disableClientInfo: true,
         username: argv.user || undefined,
         password: argv.a || undefined,
-        commandTimeout: argv['redis-timeout']
+        commandTimeout: argv['redis-timeout'],
+        readonly: false,
+        useReplicas: false
       }
     });
 

@@ -15,7 +15,7 @@ async function subscriberRoutine(
   verbose,
   totalClients
 ) {
-  async function handleMessage(channel, message) {
+  async function handleMessage(message, channel) {
     if (printMessages) {
       console.log(`[${clientName}] Received message on channel ${channel}: ${message}`);
     }
@@ -76,36 +76,30 @@ async function subscriberRoutine(
     );
   }
 
-  try {
-    while (isRunningRef.value) {
-      const subscribed = await subscribe();
-      if (!subscribed) {
-        console.error(`${clientName} failed to subscribe, retrying...`);
-        continue;
-      }
+  
+  while (isRunningRef.value) {
+    const subscribed = await subscribe();
+    if (!subscribed) {
+      console.error(`${clientName} failed to subscribe, retrying...`);
+      continue;
+    }
 
-      if (reconnectInterval > 0) {
-        await new Promise(resolve => setTimeout(resolve, reconnectInterval));
-        if (isRunningRef.value) {
-          await unsubscribe();
-        }
-      } else {
-        // If no reconnect interval, just wait until shutdown
-        await new Promise(resolve => {
-          const checkInterval = setInterval(() => {
-            if (!isRunningRef.value) {
-              clearInterval(checkInterval);
-              resolve();
-            }
-          }, 100);
-        });
+    if (reconnectInterval > 0) {
+      await new Promise(resolve => setTimeout(resolve, reconnectInterval));
+      if (isRunningRef.value) {
+        await unsubscribe();
       }
+    } else {
+      // If no reconnect interval, just wait until shutdown
+      await new Promise(resolve => {
+        const checkInterval = setInterval(() => {
+          if (!isRunningRef.value) {
+            clearInterval(checkInterval);
+            resolve();
+          }
+        }, 100);
+      });
     }
-  } finally {
-    if (verbose) {
-      console.log(`Subscriber ${clientName} shutting down...`);
-    }
-    await unsubscribe();
   }
 }
 

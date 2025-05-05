@@ -223,7 +223,8 @@ async function runBenchmark(argv) {
     // Clean shutdown of Redis connection
     console.log('Shutting down Redis connection...');
     try {
-      await client.quit();
+      for (let i = 0; i < argv.client ; i++)
+      await clients[i].quit();
       console.log('Redis connection closed successfully');
     } catch (err) {
       console.error('Error disconnecting Redis client:', err);

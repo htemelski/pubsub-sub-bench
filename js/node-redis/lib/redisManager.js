@@ -34,29 +34,40 @@ async function runBenchmark(argv) {
   const clientOptions = {
     socket: {
       host: argv.host,
-      port: argv.port
+      port: argv.port,
+      reconnectStrategy: 10000,
+      connectTimeout: 10000,
+      keepAlive: true,
     },
     username: argv.user || undefined,
     password: argv.a || undefined,
-    commandTimeout: argv['redis-timeout'],
+    disableClientInfo: true,
+    keepAlive: true
   };
 
   const clusterOptions = {
     rootNodes: [{ 
       url: `redis://${argv.host}:${argv.port}`,
       readonly: false, 
-      disableClientInfo: true
+      disableClientInfo: true,
+      reconnectStrategy: 10000,
+      connectTimeout: 10000,
+      keepAlive: true,
     }],
     useReplicas: false,
-    disableClientInfo: true,
     defaults: {
       disableClientInfo: true,
       username: argv.user || undefined,
       password: argv.a || undefined,
-      commandTimeout: argv['redis-timeout'],
       readonly: false,
-      useReplicas: false
-    }
+      reconnectStrategy: 10000,
+      connectTimeout: 10000,
+      keepAlive: true,
+    },
+    minimizeConnections: true,
+    reconnectStrategy: 10000,
+    connectTimeout: 10000,
+    keepAlive: true,
   };
 
   console.log(`Using ${argv['slot-refresh-interval']} slot-refresh-interval`);

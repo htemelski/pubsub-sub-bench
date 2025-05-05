@@ -91,3 +91,4 @@ coverage.txt
 # Profiler Results #
 ####################
 *.pprof
+/out/*

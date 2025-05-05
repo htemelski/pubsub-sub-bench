@@ -75,7 +75,7 @@ async function runBenchmark(argv) {
     
     clients.push(client);
     connectionPromises.push(client.connect());
-    if (i%100 === 0) {
+    if (i%5 === 0) {
       console.log(`Created ${i} client instances`);
       await Promise.all(connectionPromises);
       connectionPromises = [];

@@ -2,6 +2,7 @@ const { createClient, createCluster } = require('redis');
 const { publisherRoutine } = require('./publisher');
 const { subscriberRoutine } = require('./subscriber');
 const { updateCLI, writeFinalResults, createRttHistogram, RttAccumulator } = require('./metrics');
+const { setTimeout } = require('node:timers/promises');
 const seedrandom = require('seedrandom');
 
 async function runBenchmark(argv) {
@@ -30,48 +31,55 @@ async function runBenchmark(argv) {
   // Create histogram for RTT recording
   const rttHistogram = argv['measure-rtt-latency'] ? createRttHistogram() : null;
 
-  const redisOptions = {
+  const clientOptions = {
     socket: {
       host: argv.host,
       port: argv.port
     },
     username: argv.user || undefined,
     password: argv.a || undefined,
-    commandTimeout: argv['redis-timeout']
+    commandTimeout: argv['redis-timeout'],
   };
 
-  let client;
-  let nodeAddresses = [];
+  const clusterOptions = {
+    rootNodes: [{ 
+      url: `redis://${argv.host}:${argv.port}`,
+      readonly: false, 
+      disableClientInfo: true
+    }],
+    useReplicas: false,
+    disableClientInfo: true,
+    defaults: {
+      disableClientInfo: true,
+      username: argv.user || undefined,
+      password: argv.a || undefined,
+      commandTimeout: argv['redis-timeout'],
+      readonly: false,
+      useReplicas: false
+    }
+  };
 
   console.log(`Using ${argv['slot-refresh-interval']} slot-refresh-interval`);
   console.log(`Using ${argv['redis-timeout']} redis-timeout`);
 
-  if (argv['oss-cluster-api-distribute-subscribers'] === "true") {
-    // Use createCluster for Redis Cluster mode
-    client = createCluster({
-      rootNodes: [{ 
-        url: `redis://${argv.host}:${argv.port}`,
-        readonly: false, 
-        disableClientInfo: true
-      }],
-      useReplicas: false,
-      disableClientInfo: true,
-      defaults: {
-        disableClientInfo: true,
-        username: argv.user || undefined,
-        password: argv.a || undefined,
-        commandTimeout: argv['redis-timeout'],
-        readonly: false,
-        useReplicas: false
-      }
-    });
+  let clients = [];
+  let connectionPromises = [];
 
-    await client.connect();
-  } else {
-    // Standalone mode
-    client = createClient(redisOptions);
-    await client.connect();
-    console.log('Standalone mode - using single Redis instance');
+  for (let i = 1; i <= argv.clients; i++) {
+    let client;
+    if (argv['oss-cluster-api-distribute-subscribers'] === "true") {
+      client = createCluster(clusterOptions);
+    } else {
+      client = createClient(clientOptions);
+    }
+    
+    clients.push(client);
+    connectionPromises.push(client.connect());
+    if (i%100 === 0) {
+      console.log(`Created ${i} client instances`);
+      await Promise.all(connectionPromises);
+      connectionPromises = [];
+    }
   }
 
   const totalChannels = argv['channel-maximum'] - argv['channel-minimum'] + 1;
@@ -89,7 +97,7 @@ async function runBenchmark(argv) {
     totalPublishersRef.value = argv.clients;
     console.log(`Starting ${argv.clients} publishers in ${argv.mode} mode`);
     
-    for (let clientId = 1; clientId <= argv.clients; clientId++) {
+    for (let clientId = 1; clientId <= argv.clients; clientId++) {      
       const channels = [];
       const numChannels = pickChannelCount(argv);
 
@@ -113,7 +121,7 @@ async function runBenchmark(argv) {
           argv['measure-rtt-latency'],
           argv.verbose,
           argv['data-size'],
-          client,
+          clients[clientId-1],
           isRunningRef,
           totalMessagesRef
         )
@@ -159,7 +167,7 @@ async function runBenchmark(argv) {
             argv['print-messages'],
             reconnectInterval,
             argv['measure-rtt-latency'],
-            client,
+            clients[clientId-1],
             isRunningRef,
             rttAccumulator,
             rttHistogram,

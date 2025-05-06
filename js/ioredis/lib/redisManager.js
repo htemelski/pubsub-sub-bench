@@ -68,7 +68,7 @@ async function runBenchmark(argv) {
         scaleReads: 'master',
         enableReadyCheck: true,
         lazyConnect: false,
-        connectTimeout: argv['redis-timeout'],
+        connectTimeout: 120000,
         slotsRefreshInterval: argv['slot-refresh-interval']
       }
     );
@@ -89,7 +89,7 @@ async function runBenchmark(argv) {
         maxRetriesPerRequest: 1,
         enableReadyCheck: true,
         lazyConnect: false,
-        connectTimeout: argv['redis-timeout'],
+        connectTimeout: 120000,
         slotsRefreshInterval: argv['slot-refresh-interval']
       });
 

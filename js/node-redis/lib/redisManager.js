@@ -44,18 +44,24 @@ async function runBenchmark(argv) {
 
   const clusterOptions = {
     rootNodes: [{ 
-      url: `redis://${argv.host}:${argv.port}`,
-      readonly: false, 
       disableClientInfo: true,
-      connectTimeout: 120000,
+      socket: {
+        host: argv.host,
+        port: argv.port,
+        connectTimeout: 120000,
+        keepAlive: true,
+      }
     }],
     useReplicas: false,
     defaults: {
       disableClientInfo: true,
       username: argv.user || undefined,
       password: argv.a || undefined,
-      readonly: false,
       connectTimeout: 120000,
+      socket: {
+        connectTimeout: 120000,
+        keepAlive: true,
+      }
     },
     minimizeConnections: true,
     connectTimeout: 120000,

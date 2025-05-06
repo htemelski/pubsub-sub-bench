@@ -35,14 +35,11 @@ async function runBenchmark(argv) {
     socket: {
       host: argv.host,
       port: argv.port,
-      reconnectStrategy: 10000,
-      connectTimeout: 10000,
-      keepAlive: true,
+      connectTimeout: 120000,
     },
     username: argv.user || undefined,
     password: argv.a || undefined,
     disableClientInfo: true,
-    keepAlive: true
   };
 
   const clusterOptions = {
@@ -50,9 +47,7 @@ async function runBenchmark(argv) {
       url: `redis://${argv.host}:${argv.port}`,
       readonly: false, 
       disableClientInfo: true,
-      reconnectStrategy: 10000,
-      connectTimeout: 10000,
-      keepAlive: true,
+      connectTimeout: 120000,
     }],
     useReplicas: false,
     defaults: {
@@ -60,14 +55,10 @@ async function runBenchmark(argv) {
       username: argv.user || undefined,
       password: argv.a || undefined,
       readonly: false,
-      reconnectStrategy: 10000,
-      connectTimeout: 10000,
-      keepAlive: true,
+      connectTimeout: 120000,
     },
     minimizeConnections: true,
-    reconnectStrategy: 10000,
-    connectTimeout: 10000,
-    keepAlive: true,
+    connectTimeout: 120000,
   };
 
   console.log(`Using ${argv['slot-refresh-interval']} slot-refresh-interval`);
@@ -85,12 +76,6 @@ async function runBenchmark(argv) {
     }
     
     clients.push(client);
-    connectionPromises.push(client.connect());
-    if (i%5 === 0) {
-      console.log(`Created ${i} client instances`);
-      await Promise.all(connectionPromises);
-      connectionPromises = [];
-    }
   }
 
   const totalChannels = argv['channel-maximum'] - argv['channel-minimum'] + 1;
@@ -139,10 +124,6 @@ async function runBenchmark(argv) {
       );
       
       totalConnectsRef.value++;
-      
-      if (clientId % 100 === 0) {
-        console.log(`Created ${clientId} publishers so far.`);
-      }
     }
   } else if (argv.mode.includes('subscribe')) {
     // Only run subscribers
@@ -234,8 +215,9 @@ async function runBenchmark(argv) {
     // Clean shutdown of Redis connection
     console.log('Shutting down Redis connection...');
     try {
-      for (let i = 0; i < argv.client ; i++)
-      await clients[i].quit();
+      for (let i = 0; i < argv.client ; i++) {
+        await clients[i].quit();
+      }
       console.log('Redis connection closed successfully');
     } catch (err) {
       console.error('Error disconnecting Redis client:', err);

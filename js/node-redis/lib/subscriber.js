@@ -33,6 +33,7 @@ async function subscriberRoutine(
 
   async function subscribe() {
     try {
+      await client.connect()
       if (mode === 'ssubscribe') {
         await client.sSubscribe(channels, handleMessage);
       } else {

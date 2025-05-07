@@ -81,29 +81,13 @@ async function subscriberRoutine(
     );
   }
 
-  while (isRunningRef.value) {
+  try {
     const subscribed = await subscribe();
     if (!subscribed) {
-      console.error(`${clientName} failed to subscribe, retrying...`);
-      continue;
+      console.error(`${clientName} failed to subscribe...`);
     }
-
-    if (reconnectInterval > 0) {
-      await new Promise((resolve) => setTimeout(resolve, reconnectInterval));
-      if (isRunningRef.value) {
-        await unsubscribe();
-      }
-    } else {
-      // If no reconnect interval, just wait until shutdown
-      await new Promise((resolve) => {
-        const checkInterval = setInterval(() => {
-          if (!isRunningRef.value) {
-            clearInterval(checkInterval);
-            resolve();
-          }
-        }, 100);
-      });
-    }
+  } catch (err) {
+    console.error(`${clientName} raised error while subscribing...`);
   }
 }
 
